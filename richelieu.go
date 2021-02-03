@@ -41,6 +41,12 @@ func main() {
 			Action:  func(c *cli.Context) error { return generator.Generate() },
 		},
 		{
+			Name:    "generateCmdFile",
+			Usage:   "Generate only the SQL command file to load the csv generated data",
+			Aliases: []string{"gc"},
+			Action:  func(c *cli.Context) error { return generator.GenerateCmdFile() },
+		},
+		{
 			Name:    "readFromSchema",
 			Usage:   "Create a plan.json from db schema in createDataspace.txt",
 			Aliases: []string{"rs"},
@@ -54,13 +60,13 @@ func main() {
 		},
 		{
 			Name:    "readFromDico",
-			Usage:   "Update a plan.json from cardinality read in dictionary",
+			Usage:   "Update an existing plan.json from cardinality read in dictionary (showDictionaries.csv)",
 			Aliases: []string{"rd"},
 			Action:  func(c *cli.Context) error { return creator.ReadCardinalityFromDictionaries() },
 		},
 		{
 			Name:    "readFromTableCount",
-			Usage:   "Update a plan.json from rows count read in TableCount file",
+			Usage:   "Update an existing plan.json from rows count read in TableCount file (showTableCount.csv)",
 			Aliases: []string{"rt"},
 			Action:  func(c *cli.Context) error { return creator.ReadTableCounts() },
 		},

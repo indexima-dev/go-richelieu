@@ -39,6 +39,21 @@ func Generate() error {
 	return nil
 }
 
+func GenerateCmdFile() error {
+	// Read input json file plan
+	p, err := ReadFromFile(constants.DefaultPlanFile)
+	if err != nil {
+		return err
+	}
+
+	// Export load commands
+	if err := exportLoadDbCommands(p); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func generate(p *Plan) error {
 	_ = os.Mkdir("output", os.ModePerm) // Create output directory
 
@@ -195,7 +210,7 @@ func exportLoadDbCommands(p *Plan) error {
 
 	cmd = "# Load data to S3 after adapting S3 repository"
 	commands = append(commands, cmd)
-	cmd = "aws s3 cp ./output " + constants.DefaultS3Repository + " --recursive"
+	cmd = "aws s3 sync ./output " + constants.DefaultS3Repository
 	commands = append(commands, cmd)
 	commands = append(commands, "\n")
 
@@ -209,6 +224,7 @@ func exportLoadDbCommands(p *Plan) error {
 		}
 	}
 
+	_ = os.Mkdir("output", os.ModePerm) // Create output directory if not exists
 	cmdFile, err := os.Create("./output/loadCommands.txt")
 	if err != nil {
 		return err
