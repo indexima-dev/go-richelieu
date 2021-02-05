@@ -2,7 +2,7 @@ package main
 
 // TODO: Handle related cardinality (eg a column of description related to a column code)
 // TODO: Handle unbalanced cardinality (eg a value represented on 80% of lines  )
-
+// TODO: Integrate column widths automatically
 // TODO: Extract tables row count from diag
 // TODO: Parse showMemory.csv to estimate relatives cardinalities between indexed columns
 

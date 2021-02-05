@@ -11,7 +11,7 @@
                     "columns": [
                         {"type": "INT","name": "Col1","distinct": 10},
                         {"type": "INT","name": "Col2","distinct": 11},
-                        {"type": "INT","name": "Col3","distinct": 2, "start":"20", "mode": "BLOCK"},
+                        {"type": "INT","name": "Col3","distinct": 2, "offset":20, "mode": "BLOCK"},
                         {"type": "FLOAT","name": "Col4","distinct": 5, "start":"3.00", "end": "9.00"},
                         {"type": "STRING","name": "Col5","distinct": 10, "values":"AAA;BBB;CCC"},
                         {"type": "STRING","name": "Col6","distinct": 10, "prefix":"txt_", "mode": "RANDOM"},

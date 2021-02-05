@@ -79,7 +79,8 @@ func CreateFromSchema() error {
 		for _, c := range allFields {
 			v := strings.Split(c, " ")
 			if len(v) != 2 {
-				return errors.New("Error reading field from table " + names[1])
+				log.Println("Warning reading field from table " + names[1] + " " + c + ". Will default to STRING")
+				v[1] = "STRING"
 			}
 			table.Columns = append(table.Columns, generator.Column{Name: v[0], Type: v[1], Distinct: 1})
 		}
@@ -122,31 +123,39 @@ func cleansingSchemaFile(text string) string {
 	text = strings.ReplaceAll(text, "-- ", "")
 
 	// Remove table source (eg CREATE TABLE table1 FROM srcTable IN 'jdbc:hive2://table')
-	r, _ = regexp.Compile("FROM (.*) IN '(.*)'")
+	r, _ = regexp.Compile("(?i)FROM (.*) IN '(.*)'")
 	text = r.ReplaceAllString(text, "")
 
 	// Simplify numeric types
-	r, _ = regexp.Compile("DOUBLE\\(([0-9]+),([0-9]+)\\)")
+	r, _ = regexp.Compile("(?i)DOUBLE\\(([0-9]+),([0-9]+)\\)")
 	text = r.ReplaceAllString(text, "DOUBLE")
 
 	// Remove ALTER TABLE
-	r, _ = regexp.Compile("ALTER TABLE (.*);")
+	r, _ = regexp.Compile("(?i)ALTER TABLE (.*);")
 	text = r.ReplaceAllString(text, "")
 
 	// Remove MAIN INDEX
-	r, _ = regexp.Compile("MAIN INDEX (.*)\\((.*)\\)")
+	r, _ = regexp.Compile("(?i)MAIN INDEX (.*)\\((.*)\\),?")
+	text = r.ReplaceAllString(text, "")
+
+	// Remove INDEX
+	r, _ = regexp.Compile("(?i)INDEX (.*)\\((.*)\\),?")
 	text = r.ReplaceAllString(text, "")
 
 	// Remove Table PROPERTIES
-	r, _ = regexp.Compile("PROPERTIES \\((.*)\\)")
+	r, _ = regexp.Compile("(?i)PROPERTIES \\((.*)\\),?")
 	text = r.ReplaceAllString(text, "")
 
+	// Replace AS CONCAT with STRING
+	r, _ = regexp.Compile("(?i)AS CONCAT\\((.*)\\)")
+	text = r.ReplaceAllString(text, "STRING")
+
 	// Replace AS round with DOUBLE
-	r, _ = regexp.Compile("AS round\\((.*)\\)")
+	r, _ = regexp.Compile("(?i)AS round\\((.*)\\)")
 	text = r.ReplaceAllString(text, "DOUBLE")
 
 	// Replace AS if with DOUBLE
-	r, _ = regexp.Compile("AS if\\((.*)\\)")
+	r, _ = regexp.Compile("(?i)AS if\\((.*)\\)")
 	text = r.ReplaceAllString(text, "DOUBLE")
 
 	// Remove CREATE TABLE
