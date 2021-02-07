@@ -1,11 +1,5 @@
 package main
 
-// TODO: Handle related cardinality (eg a column of description related to a column code)
-// TODO: Handle unbalanced cardinality (eg a value represented on 80% of lines  )
-// TODO: Integrate column widths automatically
-// TODO: Extract tables row count from diag
-// TODO: Parse showMemory.csv to estimate relatives cardinalities between indexed columns
-
 import (
 	"fmt"
 	"log"
@@ -13,7 +7,6 @@ import (
 	"time"
 
 	"github.com/estebgonza/go-richelieu/constants"
-	"github.com/estebgonza/go-richelieu/creator"
 	"github.com/estebgonza/go-richelieu/generator"
 	"github.com/urfave/cli/v2"
 )
@@ -41,34 +34,10 @@ func main() {
 			Action:  func(c *cli.Context) error { return generator.Generate() },
 		},
 		{
-			Name:    "generateCmdFile",
-			Usage:   "Generate only the SQL command file to load the csv generated data",
-			Aliases: []string{"gc"},
-			Action:  func(c *cli.Context) error { return generator.GenerateCmdFile() },
-		},
-		{
-			Name:    "readFromSchema",
-			Usage:   "Create a plan.json from db schema in createDataspace.txt",
-			Aliases: []string{"rs"},
-			Action:  func(c *cli.Context) error { return creator.CreateFromSchema() },
-		},
-		{
 			Name:    "readFromColumn",
 			Usage:   "Create a plan.json from column list argument",
 			Aliases: []string{"rc"},
-			Action:  func(c *cli.Context) error { return creator.CreateFromColumn(c.Args()) },
-		},
-		{
-			Name:    "readFromDico",
-			Usage:   "Update an existing plan.json from cardinality read in dictionary (showDictionaries.csv)",
-			Aliases: []string{"rd"},
-			Action:  func(c *cli.Context) error { return creator.ReadCardinalityFromDictionaries() },
-		},
-		{
-			Name:    "readFromTableCount",
-			Usage:   "Update an existing plan.json from rows count read in TableCount file (showTableCount.csv)",
-			Aliases: []string{"rt"},
-			Action:  func(c *cli.Context) error { return creator.ReadTableCounts() },
+			Action:  func(c *cli.Context) error { return generator.CreateFromColumn(c.Args()) },
 		},
 	}
 

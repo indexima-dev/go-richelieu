@@ -6,7 +6,7 @@
                 {
                     "name": "table1",
                     "rows": 100,
-                    "files": 1,
+                    "files": 2,
                     "mode": "ALTERNATE",
                     "columns": [
                         {"type": "INT","name": "Col1","distinct": 10},
@@ -17,11 +17,11 @@
                         {"type": "STRING","name": "Col6","distinct": 10, "prefix":"txt_", "mode": "RANDOM"},
                         {"type": "DATE","name": "Col7","distinct": 5, "start": "2020-01-01 15:00:00","end": "2020-01-02 15:05:00"}
                     ]
-                }
+                },
                 {
                     "name": "table2",
                     "rows": 100000000,
-                    "files": 1,
+                    "files": 2,
                     "mode": "ALTERNATE",
                     "columns": [
                         {"type": "INT","name": "Col1","distinct": 1000},
