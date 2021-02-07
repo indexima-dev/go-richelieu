@@ -8,7 +8,7 @@
 </div>
 
 ### Usage
-- Build with `make``
+- Build with `make`
 - Initiate a new plan.json `./bin/richelieu_linux_amd64 readFromColumn "INT, STRING, INT"`
 - Adapt the plan.json file describing dataset to generate. See plan.json.example.
 - Generate the dataset `./bin/richelieu_linux_amd64 generate`
@@ -17,9 +17,9 @@
 - Distinct: cardinality of column values
 - Name: column name
 - Mode:
--- Block: 0, 0, 0, 1, 1, 1, 2, 2, 2
--- Alternate: 0, 1 , 2, 0, 1 , 2, 0, 1 , 2
--- Random: 2, 0, 1, 2, 2, 0, 1, 0, 1
+  - Block: 0, 0, 0, 1, 1, 1, 2, 2, 2
+  - Alternate: 0, 1 , 2, 0, 1 , 2, 0, 1 , 2
+  - Random: 2, 0, 1, 2, 2, 0, 1, 0, 1
 - Prefix: string column prefixed with this string
 - Offset: start index from this offset
 - Values: force a list of values to appear in generated data
