@@ -51,7 +51,10 @@ func (table *Table) generate(schemaName string) error {
 
 	// Prepare each column (pre-calculation for performance)
 	for c := range table.Columns {
-		table.Columns[c].init(table.Mode)
+		err := table.Columns[c].init(table.Mode)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create output folder
