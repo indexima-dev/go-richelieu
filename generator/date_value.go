@@ -23,5 +23,5 @@ func (v *dateValue) init(c Column) {
 func (v dateValue) getCurrentValue(position int) string {
 	vv := v.DateStart + v.DateStep*int64(position)
 	tm := time.Unix(vv, 0)
-	return tm.Local().String()
+	return tm.UTC().Format("2006-01-02 15:04:05")
 }
