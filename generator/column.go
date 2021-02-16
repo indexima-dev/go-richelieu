@@ -23,6 +23,7 @@ type Column struct {
 	End            string   `json:"end,omitempty"`
 	Prefix         string   `json:"prefix,omitempty"`
 	ValuesList     string   `json:"values,omitempty"`
+	BlockStep      int      `json:"blockstep,omitempty"`
 	ValuesSlice    []string `json:"-"` // Overload to store valuesList sliced
 	valueGenerator value    `json:"-"`
 }
@@ -80,8 +81,11 @@ func createValueGenerator(t string) (value, error) {
 
 func (c *Column) getValue(line int, total int) string {
 	var v int
-	if c.Mode == "BLOCK" {
+	if c.Mode == "BLOCK" && c.BlockStep == 0 {
 		v = int(float64(line) / (float64(total) / float64(c.Distinct)))
+	} else if c.Mode == "BLOCK" && c.BlockStep != 0 {
+		// Note: using int conversion rather than modulo for performance
+		v = int(float64(line)/float64(c.BlockStep)) - c.Distinct*int(float64(line)/float64(c.BlockStep*c.Distinct))
 	} else if c.Mode == "RANDOM" {
 		v = rand.Intn(c.Distinct)
 	} else {

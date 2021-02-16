@@ -24,3 +24,6 @@
 - **Offset:** start index from this offset
 - **Values:** force a list of values to appear in generated data
 - **Start/End:** used to control interval for float and dateTime columns
+- **blockstep** for block mode, the same value appears consecutively this number of times
+  - **blockstep: 2** 0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2, ...
+  - **blockstep: 3** 0, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 0, ...

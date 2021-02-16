@@ -123,4 +123,7 @@ func mergeColumnParts(column *Column, added *Column) {
 	if added.ValuesList != "" {
 		column.ValuesList = added.ValuesList
 	}
+	if added.BlockStep != 0 {
+		column.BlockStep = added.BlockStep
+	}
 }
