@@ -1,5 +1,7 @@
 package generator
 
+import "strings"
+
 type Plan struct {
 	Schemas []Schema `json:"schemas"`
 }
@@ -19,7 +21,7 @@ type Table struct {
 
 func (plan *Plan) HasSchema(name string) int {
 	for index := range plan.Schemas {
-		if plan.Schemas[index].Name == name {
+		if strings.ToLower(plan.Schemas[index].Name) == strings.ToLower(name) {
 			return index
 		}
 	}
@@ -28,7 +30,7 @@ func (plan *Plan) HasSchema(name string) int {
 
 func (schema *Schema) HasTable(name string) int {
 	for index := range schema.Tables {
-		if schema.Tables[index].Name == name {
+		if strings.ToLower(schema.Tables[index].Name) == strings.ToLower(name) {
 			return index
 		}
 	}
@@ -37,7 +39,7 @@ func (schema *Schema) HasTable(name string) int {
 
 func (table *Table) HasColumn(name string) int {
 	for index := range table.Columns {
-		if table.Columns[index].Name == name {
+		if strings.ToLower(table.Columns[index].Name) == strings.ToLower(name) {
 			return index
 		}
 	}
