@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	intType    = "INT"
-	floatType  = "FLOAT"
-	dateType   = "DATE"
-	stringType = "STRING"
+	intType      = "INT"
+	floatType    = "FLOAT"
+	dateType     = "DATE"
+	datetimeType = "DATETIME"
+	stringType   = "STRING"
 )
 
 type Column struct {
@@ -71,6 +72,8 @@ func createValueGenerator(t string) (value, error) {
 		v = &floatValue{}
 	case dateType:
 		v = &dateValue{}
+	case datetimeType:
+		v = &datetimeValue{}
 	case stringType:
 		v = &stringValue{}
 	default:
