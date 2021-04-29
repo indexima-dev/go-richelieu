@@ -3,19 +3,15 @@ package generator
 import "strconv"
 
 type intValue struct {
-	currentValue int64
-	step         int64
+	Prefix string
+	Offset int
 }
 
-func (v *intValue) generateValue() {
-	v.currentValue += v.step
+func (v *intValue) init(c Column) {
+	v.Prefix = c.Prefix
+	v.Offset = c.Offset
 }
 
-func (v *intValue) init(i string) {
-	v.currentValue, _ = strconv.ParseInt(i, 10, 64)
-	v.step = 1
-}
-
-func (v intValue) getCurrentValue() string {
-	return strconv.FormatInt(v.currentValue, 10)
+func (v intValue) getCurrentValue(position int) string {
+	return v.Prefix + strconv.Itoa(position+v.Offset)
 }

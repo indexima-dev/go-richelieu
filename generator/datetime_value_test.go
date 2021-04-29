@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-func TestDateValueInit(t *testing.T) {
-	var r dateValue
-	initValue := Column{Type: "DATE", Distinct: 5, Start: "2020-01-01 15:00:00", End: "2020-01-02 15:05:00"}
+func TestDatetimeValueInit(t *testing.T) {
+	var r datetimeValue
+	initValue := Column{Type: "DATETIME", Distinct: 5, Start: "2020-01-01 15:00:00", End: "2020-01-02 15:05:00"}
 	r.init(initValue)
 
 	if r.DateStart != time.Date(2020, 01, 01, 15, 00, 00, 000000000, time.UTC).Unix() {
@@ -18,9 +18,9 @@ func TestDateValueInit(t *testing.T) {
 	}
 }
 
-func TestDateValueGetCurrentValue(t *testing.T) {
-	var r dateValue
-	initValue := Column{Type: "DATE", Distinct: 5, Start: "2020-01-01 15:00:00", End: "2020-01-02 15:05:00"}
+func TestDatetimeValueGetCurrentValue(t *testing.T) {
+	var r datetimeValue
+	initValue := Column{Type: "DATETIME", Distinct: 5, Start: "2020-01-01 15:00:00", End: "2020-01-02 15:05:00"}
 	r.init(initValue)
 	var e string = "2020-01-04 11:26:00 +0100 CET"
 	ret := r.getCurrentValue(14)

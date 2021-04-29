@@ -1,148 +1,237 @@
 package generator
 
 import (
-	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
-)
 
-// PlanColumn The plan per column as described in the input json file
-type PlanColumn struct {
-	Type     string `json:"type"`
-	Name     string `json:"name"`
-	Distinct int    `json:"distinct"`
-	Start    string `json:"start"`
-	End      string `json:"end"`
-}
-
-// Plan Plan is the plan as described in the input json file
-type Plan struct {
-	Rows        int          `json:"rows"`
-	Files       int          `json:"files"`
-	PlanColumns []PlanColumn `json:"columns"`
-	Columns     []*Column    `json:"-"`
-}
-
-const (
-	intType    = "INT"
-	idIntType  = "ID_INT"
-	floatType  = "FLOAT"
-	dateType   = "DATE"
-	stringType = "STRING"
+	"github.com/estebgonza/go-richelieu/constants"
+	"github.com/urfave/cli/v2"
 )
 
 // Execute Entrypoint of the generation plan
-func Execute(p *Plan) error {
-	if err := validate(p); err != nil {
+func Generate() error {
+	// Read input json file plan
+	p, err := GetPlanFromFile(constants.DefaultPlanFile)
+	if err != nil {
 		return err
 	}
-	// Initialize Column from PlanColumns
-	if err := initializeColumns(p); err != nil {
-		return err
-	}
+
 	// Generate rows
-	generate(p)
+	if err := p.generate(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func generate(p *Plan) error {
+func (p *Plan) generate() error {
+	if p == nil {
+		return errors.New("Missing plan.json file")
+	}
+	_ = os.Mkdir("output", os.ModePerm) // Create output directory
+	for _, schema := range p.Schemas {  // For each schema
+		for _, table := range schema.Tables { // For each table
+			err := table.generate(schema.Name) // Generate table dataset
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (table *Table) generate(schemaName string) error {
+
+	// Prepare each column (pre-calculation for performance)
+	for c := range table.Columns {
+		err := table.Columns[c].init(table.Mode)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Create output folder
+	folderName := schemaName + "." + table.Name
+	_ = os.Mkdir("output/"+folderName, os.ModePerm)
+
+	// Multithread generation if several files are requested
 	wg := sync.WaitGroup{}
-	for i := 0; i < p.Files; i++ {
-		wg.Add(1)
+	for i := 0; i < table.Files; i++ { // For each file
+		wg.Add(1) // Start a dedicated thread
+
 		go func(i int) {
-			fileName := "output/output_" + strconv.Itoa(i) + ".csv"
+			// Open output file
+			fileName := "output/" + folderName + "/export_" + strconv.Itoa(i) + ".csv"
 			csvFile, err := os.Create(fileName)
 			if err != nil {
 				log.Println(err)
+				os.Exit(1)
 			}
-			csvWriter := csv.NewWriter(csvFile)
-			for j := 0; j < p.Rows/p.Files; j++ {
-				var row []string
-				// Build the row
-				for _, column := range p.Columns {
-					// TODO use a master thread for cardinality management that listen to all the other threads and
-					// change the c.currentValue accordingly
-					column.nextValue()
-					row = append(row, column.valueGenerator.getCurrentValue())
+
+			// Insure last file has exactly appropriate number of rows
+			rowsCurrentFile := (table.Rows / table.Files)
+			firstRow := (i * rowsCurrentFile)
+			if i == table.Files-1 {
+				rowsCurrentFile = table.Rows - (table.Files-1)*(table.Rows/table.Files)
+			}
+
+			var row []string
+			var rowsBuffer []string
+			for j := 0; j < rowsCurrentFile; j++ {
+
+				if j == 0 { // Build the first row
+					for _, column := range table.Columns {
+						row = append(row, column.getValue(firstRow+j, table.Rows))
+					}
+				} else { // For performane, only update columns with distinct > 1
+					for c, column := range table.Columns {
+						if column.Distinct > 1 {
+							row[c] = column.getValue(firstRow+j, table.Rows)
+						}
+					}
 				}
-				csvWriter.Write(row)
+
+				rowsBuffer = append(rowsBuffer, strings.Join(row, ","))
 				if j%10000 == 0 && j != 0 {
-					csvWriter.Flush()
+					// Note: for performance, use WriteString rather than a csvWriter
+					_, err := csvFile.WriteString(strings.Join(rowsBuffer, "\n") + "\n")
+					if err != nil {
+						log.Println(err)
+						os.Exit(1)
+					}
+					rowsBuffer = nil
+
+					// Display a progress status
+					if table.Rows >= 1000000 && j%100000 == 0 {
+						fmt.Printf(".")
+					}
 				}
 			}
-			csvWriter.Flush()
+			_, err = csvFile.WriteString(strings.Join(rowsBuffer, "\n") + "\n")
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+			rowsBuffer = nil
+			csvFile.Close()
 			wg.Done()
 		}(i)
 	}
 	wg.Wait()
+	if table.Rows >= 1000000 {
+		fmt.Printf("\n")
+	}
+	log.Println("Done generating " + schemaName + "." + table.Name)
 	return nil
 }
 
-func initializeColumns(p *Plan) error {
-	for _, planColumn := range p.PlanColumns {
-		value, err := createValueGenerator(planColumn.Type)
-		// TODO: Add a step calculator
-		value.init(planColumn.Start)
-		if err != nil {
-			return err
-		}
-		rotBase := p.Rows / planColumn.Distinct
-		rotMod := p.Rows % planColumn.Distinct
-		name := planColumn.Name
-		column := Column{valueGenerator: value, colName: name, rotationBase: rotBase, rotationMod: rotMod, count: rotBase, totCount: 0}
-		p.Columns = append(p.Columns, &column)
-	}
-	return nil
-}
+// Validate Plan (rows and cardinalities)
+func (p *Plan) validate() error {
+	// For each column of each table of each schema
+	for _, s := range p.Schemas {
+		for _, t := range s.Tables {
+			if t.Rows < 0 {
+				m := fmt.Sprintf("Error. Table %s: Expected rows can't be negative.", t.Name)
+				return errors.New(m)
+			}
+			for _, c := range t.Columns {
+				cardinality := c.Distinct
+				if cardinality < 1 {
+					m := fmt.Sprintf("Error. Column %s.%s.%s: cardinality can't be lower than 1.", s.Name, t.Name, c.Name)
+					return errors.New(m)
+				}
 
-// Validate Plan inputs.
-// If validation fail returns an error.
-func validate(p *Plan) error {
-	rows := p.Rows
-	if rows < 0 {
-		return errors.New("Expected rows can't be negative")
-	}
-	// Checks cardinalities for each columns
-	for index, planColumn := range p.PlanColumns {
-		cardinality := planColumn.Distinct
-		if cardinality < 1 {
-			m := fmt.Sprintf("Error. Column %d: cardinality can't be lower than 1.", index)
-			return errors.New(m)
-		}
-		if cardinality > rows {
-			m := fmt.Sprintf("Error. Column %d: cardinality can't be higher than number of rows (%d).", index, rows)
-			return errors.New(m)
+			}
 		}
 	}
 	return nil
 }
 
-// ChecksSupportedType Check that input type is supported by Richelieu by creating a temp instance of a Value
-func ChecksSupportedType(t string) error {
-	_, err := createValueGenerator(t)
-	return err
+func GetPlanFromFile(planfile string) (*Plan, error) {
+	var p Plan
+
+	if _, err := os.Stat(planfile); os.IsNotExist(err) {
+		return nil, nil // planfile doesnt exist
+	}
+
+	planFile, err := os.Open(planfile)
+	if err != nil {
+		return nil, errors.New("No plan.json found")
+	}
+
+	byteValue, _ := ioutil.ReadAll(planFile)
+	json.Unmarshal(byteValue, &p)
+	planFile.Close()
+
+	// Control input plan
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+
+	return &p, nil
 }
 
-func createValueGenerator(t string) (value, error) {
-	var v value
-	switch t {
-	case intType:
-		v = &intValue{}
-	case idIntType:
-		v = &idIntValue{}
-	case floatType:
-		v = &floatValue{}
-	case dateType:
-		v = &dateValue{}
-	case stringType:
-		v = &stringValue{}
-	default:
-		return nil, errors.New("Unsupported type " + t)
+// Read a list of types from arguments (eg: INT, STRING, INT) and initiate a plan.json with it
+func CreateFromColumn(args cli.Args) error {
+
+	if args.Len() == 0 {
+		return errors.New("Please specify columns type to init a generation plan")
 	}
-	return v, nil
+
+	typeList := strings.ReplaceAll(args.Get(0), " ", "")
+	cols := strings.Split(typeList, ",")
+	var columns []Column
+	for index, t := range cols {
+		if !ChecksSupportedType(t) {
+			return errors.New("Unsupported column type " + t)
+		}
+		var pc Column
+		pc.Name = strings.ToLower(strconv.Itoa(index) + "_" + t)
+		pc.Distinct = 1
+		pc.Type = t
+		columns = append(columns, pc)
+	}
+
+	var table = Table{Name: "table1", Rows: 10000, Files: 1, Columns: columns}
+	var schema = Schema{Name: "schema1", Tables: []Table{table}}
+	var plan = Plan{Schemas: []Schema{schema}}
+
+	return WriteToFile(plan, constants.DefaultPlanFile)
+}
+
+func WriteToFile(plan Plan, planfile string) error {
+
+	// If planfile exist, we merge new plan with existing plan
+	existingPlan, err := GetPlanFromFile(planfile)
+	if err != nil {
+		return err
+	}
+	if existingPlan != nil {
+		MergePlanParts(&plan, existingPlan)
+	}
+
+	json, err := json.MarshalIndent(plan, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// Cosmetic corrections to have columns on one line (usefull for large schema)
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"type\"", "\"type\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"name\"", "\"name\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"distinct\"", "\"distinct\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"start\"", "\"start\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"end\"", "\"end\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                            \"values\"", "\"values\""))
+	json = []byte(strings.ReplaceAll(string(json), "\n                        }", "}"))
+
+	ioutil.WriteFile(planfile, json, 0644)
+
+	return nil
 }

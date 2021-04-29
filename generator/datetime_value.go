@@ -2,12 +2,12 @@ package generator
 
 import "time"
 
-type dateValue struct {
+type datetimeValue struct {
 	DateStart int64
 	DateStep  int64
 }
 
-func (v *dateValue) init(c Column) {
+func (v *datetimeValue) init(c Column) {
 	if c.Start == "" {
 		c.Start = "2020-01-01 00:00:00"
 	}
@@ -20,8 +20,8 @@ func (v *dateValue) init(c Column) {
 	v.DateStep = (v2.Unix() - v1.Unix()) / int64(c.Distinct)
 }
 
-func (v dateValue) getCurrentValue(position int) string {
+func (v datetimeValue) getCurrentValue(position int) string {
 	vv := v.DateStart + v.DateStep*int64(position)
 	tm := time.Unix(vv, 0)
-	return tm.UTC().Format("2006-01-02")
+	return tm.UTC().Format("2006-01-02 15:04:05")
 }

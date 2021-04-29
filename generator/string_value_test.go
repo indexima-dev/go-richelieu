@@ -1,73 +1,28 @@
 package generator
 
 import (
-	"reflect"
 	"testing"
 )
 
-func TestStringValueInit1(t *testing.T) {
-	var r1 stringValue
-	var r2 stringValue
-	var e string = "test_1"
-	initValue := "test"
-	r1.init(initValue)
-	r2.init(initValue)
-	if reflect.TypeOf(r1.currentValue) != reflect.TypeOf(e) {
-		t.Errorf("Type is not %v. Is %v", reflect.TypeOf(e), reflect.TypeOf(r1.currentValue))
-	}
-	if r1.currentValue != r2.currentValue {
-		t.Errorf("r1 = %v. r2 = %v. Should be the same", r1.currentValue, r2.currentValue)
-	}
-	if r1.currentValue != e {
-		t.Errorf("r1 KO. Expected %v. Got %v", r1.currentValue, e)
-	}
-	if r2.currentValue != e {
-		t.Errorf("r2 KO. Expected %v. Got %v", r2.currentValue, e)
-	}
-}
-
-func TestStringValueInit2(t *testing.T) {
-	var etype string
-	var r1 stringValue
-	var r2 stringValue
-	initValue1 := "test1"
-	initValue2 := "test2"
-	r1.init(initValue1)
-	r2.init(initValue2)
-	var e1 string = "test1_1"
-	var e2 string = "test2_1"
-	if reflect.TypeOf(r1.currentValue) != reflect.TypeOf(etype) {
-		t.Errorf("Type is not %v. Is %v", reflect.TypeOf(etype), reflect.TypeOf(r1.currentValue))
-	}
-	if r1.currentValue != e1 {
-		t.Errorf("r1 KO. Expected %v. Got %v", e1, r1.currentValue)
-	}
-	if r2.currentValue != e2 {
-		t.Errorf("r2 KO. Expected %v. Got %v", e2, r2.currentValue)
-	}
-	if r1.currentValue == r2.currentValue {
-		t.Errorf("%v == %v. Should be different", r1.currentValue, r2.currentValue)
-	}
-}
-
-func TestStringValueGenerate1(t *testing.T) {
-	var r stringValue
-	initValue := "test"
+func TestStringValueInit(t *testing.T) {
+	var r intValue
+	initValue := Column{Type: "STRING", Distinct: 33, Offset: 1000, Prefix: "prefix_"}
 	r.init(initValue)
-	var e string = "test_2"
-	r.generateValue()
-	if r.currentValue != e {
-		t.Errorf("Expected %v, got %v", e, r.currentValue)
+
+	if r.Prefix != "prefix_" {
+		t.Errorf("Incorrect prefix %s.", r.Prefix)
+	}
+	if r.Offset != 1000 {
+		t.Errorf("Incorrect offset %d.", r.Offset)
 	}
 }
 
-func TestStringValueGetCurrentValue1(t *testing.T) {
-	var r stringValue
-	initValue := "test"
+func TestStringValueGetCurrentValue(t *testing.T) {
+	var r intValue
+	initValue := Column{Type: "STRING", Distinct: 25, Offset: 1000, Prefix: "prefix_"}
 	r.init(initValue)
-	var e string = "test_1"
-	ret := r.getCurrentValue()
-	if ret != e {
-		t.Errorf("Expected %v, got %v", e, ret)
+	ret := r.getCurrentValue(24)
+	if ret != "prefix_1024" {
+		t.Errorf("Incorrect value %s.", ret)
 	}
 }

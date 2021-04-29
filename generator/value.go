@@ -1,7 +1,6 @@
 package generator
 
 type value interface {
-	getCurrentValue() string
-	generateValue()
-	init(i string)
+	getCurrentValue(position int) string
+	init(c Column)
 }
